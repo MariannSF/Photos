@@ -12,9 +12,11 @@ import android.content.Context;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.provider.MediaStore;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -22,19 +24,33 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.example.photos.databinding.FragmentProfileBinding;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
+import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.UUID;
 
 
+
+
+
 public class ProfileFragment extends Fragment {
+
+    ArrayList<String> imagelist= new ArrayList<>();
+    RecyclerView recyclerView;
+    /*StorageReference root;
+    ProgressBar progressBar;*/
+    ProfileRecycAdapter adapter;
+    LinearLayoutManager layoutManager;
 
     Button selectImage;
     Button uploadImage;
@@ -115,6 +131,35 @@ public class ProfileFragment extends Fragment {
             public void onClick(View view) {
 
                 UploadImage();
+            }
+        });
+
+        recyclerView = binding.recycViewx;
+        recyclerView.setHasFixedSize(true);
+        layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+        adapter = new ProfileRecycAdapter(imagelist,this);
+       // recyclerView.setAdapter(adapter);
+
+        StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images");
+        listRef.listAll().addOnSuccessListener(new OnSuccessListener<ListResult>() {
+            @Override
+            public void onSuccess(ListResult listResult) {
+                for (StorageReference file: listResult.getItems()){
+                    file.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                        @Override
+                        public void onSuccess(Uri uri) {
+                            imagelist.add(uri.toString());
+                            Log.d("demo", "onSuccess: itemvalue "+ uri.toString());
+                        }
+                    }).addOnSuccessListener(new OnSuccessListener<Uri>() {
+                        @Override
+                        public void onSuccess(Uri uri) {
+                            recyclerView.setAdapter(adapter);
+
+                        }
+                    });
+                }
             }
         });
     }
@@ -251,27 +296,44 @@ public class ProfileFragment extends Fragment {
 }
 
 
+
 class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.ProfileViewHolder>{
+
+    private ArrayList<String> imageList;
+
+    public ProfileRecycAdapter(ArrayList<String> imagelist, ProfileFragment profileFragment) {
+
+        this.imageList = imagelist;
+
+    }
+
+
 
     @NonNull
     @Override
-    public ProfileRecycAdapter.ProfileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        return null;
+    public ProfileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.listing_item, parent,false);
+        ProfileViewHolder profileViewHolder = new ProfileViewHolder(view);
+        return profileViewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ProfileRecycAdapter.ProfileViewHolder holder, int position) {
 
+        Glide.with(holder.imageView.getContext()).load(imageList.get(position)).into(holder.imageView);
     }
 
     @Override
     public int getItemCount() {
-        return 0;
+        return imageList.size();
     }
 
     public class ProfileViewHolder extends RecyclerView.ViewHolder {
+
+        ImageView imageView;
         public ProfileViewHolder(@NonNull View itemView) {
             super(itemView);
+            imageView = itemView.findViewById(R.id.imageViewImage);
         }
     }
 }

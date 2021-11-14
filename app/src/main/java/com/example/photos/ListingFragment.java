@@ -2,15 +2,31 @@ package com.example.photos;
 
 import android.os.Bundle;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+
+import com.bumptech.glide.Glide;
+import com.example.photos.databinding.FragmentListingBinding;
+
+import java.util.ArrayList;
 
 
 public class ListingFragment extends Fragment {
 
+    ArrayList<String> imagelist;
+   // RecyclerView recyclerView;
+    /*StorageReference root;
+    ProgressBar progressBar;*/
+    //PhotoAdapter adapter;
+    LinearLayoutManager layoutManager;
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
@@ -43,10 +59,21 @@ public class ListingFragment extends Fragment {
         }
     }
 
+    FragmentListingBinding binding;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_listing, container, false);
+        binding = FragmentListingBinding.inflate(inflater,container,false);
+        return binding.getRoot();
+
+
+
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
     }
 }
+
