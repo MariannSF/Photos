@@ -120,6 +120,7 @@ public class ProfileFragment extends Fragment {
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
+        updateList();
         adapter = new ProfileRecycAdapter(imagelist,this);
 
         mAuth = FirebaseAuth.getInstance();
@@ -127,7 +128,7 @@ public class ProfileFragment extends Fragment {
         imageView = binding.imageView1;
         selectImage = binding.buttonAddPhoto;
         uploadImage = binding.buttonUpload;
-        refresh = binding.buttonRefresh;
+        //refresh = binding.buttonRefresh;
         uploadImage.setVisibility(View.INVISIBLE);
 
         // get the Firebase  storage reference
@@ -138,6 +139,7 @@ public class ProfileFragment extends Fragment {
         databaseReference = db.getReference("images");
 
         super.onViewCreated(view, savedInstanceState);
+
         selectImage.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -157,16 +159,19 @@ public class ProfileFragment extends Fragment {
 
             }
         });
-        refresh.setOnClickListener(new View.OnClickListener() {
+       /* refresh.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
 
             }
-        });
+        });*/
 
 
 
-        StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images");
+
+    }
+    void updateList(){
+        StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images/images");
         listRef.listAll().addOnSuccessListener(new OnSuccessListener<ListResult>() {
             @Override
             public void onSuccess(ListResult listResult) {
@@ -174,8 +179,9 @@ public class ProfileFragment extends Fragment {
                     file.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                         @Override
                         public void onSuccess(Uri uri) {
-                            imagelist.add(uri.toString());
+                          //  imagelist.add(uri.toString());
                             Log.d("demo", "onSuccess: itemvalue "+ uri.toString());
+                            adapter.notifyDataSetChanged();
                         }
                     }).addOnSuccessListener(new OnSuccessListener<Uri>() {
                         @Override
@@ -293,17 +299,16 @@ public class ProfileFragment extends Fragment {
                                     // Image uploaded successfully
                                     // Dismiss dialog
                                     progressDialog.dismiss();
-                                    Toast
-                                            .makeText(getContext(),
-                                                    "Image Uploaded!!",
-                                                    Toast.LENGTH_SHORT)
-                                            .show();
+                                    Toast.makeText(getContext(), "Image Uploaded!!",Toast.LENGTH_SHORT).show();
+                                    imagelist.add(filePath.toString());
+
 
                                     ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                         @Override
                                         public void onSuccess(Uri uri) {
                                             Log.d("demo", "onSuccess: The added photos uri is "+ uri.toString());
                                             setData(mAuth.getUid(), FirebaseAuth.getInstance().getCurrentUser().getDisplayName(),uri.toString());
+                                            adapter.notifyDataSetChanged();
                                         }
                                     });
 
@@ -366,7 +371,7 @@ public class ProfileFragment extends Fragment {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void unused) {
-                        Log.d("demo", "onSuccess: Forum Successfuly posted ");
+                        Log.d("demo", "onSuccess: Image Info Successfuly posted ");
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
