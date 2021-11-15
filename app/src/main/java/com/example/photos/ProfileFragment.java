@@ -3,18 +3,12 @@ package com.example.photos;
 import static android.app.Activity.RESULT_OK;
 
 import android.app.ProgressDialog;
+import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.content.Context;
-
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -24,23 +18,34 @@ import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.bumptech.glide.Glide;
 import com.example.photos.databinding.FragmentProfileBinding;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
+import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
-import com.squareup.picasso.Picasso;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.UUID;
-
-
-
 
 
 public class ProfileFragment extends Fragment {
@@ -51,9 +56,10 @@ public class ProfileFragment extends Fragment {
     ProgressBar progressBar;*/
     ProfileRecycAdapter adapter;
     LinearLayoutManager layoutManager;
-
+    FirebaseAuth mAuth;
     Button selectImage;
     Button uploadImage;
+    Button refresh;
     ImageView imageView;
     private Uri filePath;
     // request code
@@ -62,6 +68,8 @@ public class ProfileFragment extends Fragment {
     // instance for firebase storage and StorageReference
     FirebaseStorage storage;
     StorageReference storageReference;
+    FirebaseDatabase db;
+    DatabaseReference databaseReference;
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -108,14 +116,26 @@ public class ProfileFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        recyclerView = binding.recycViewx;
+        recyclerView.setHasFixedSize(true);
+        layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+        adapter = new ProfileRecycAdapter(imagelist,this);
 
+        mAuth = FirebaseAuth.getInstance();
+        String uid = mAuth.getCurrentUser().getUid();
         imageView = binding.imageView1;
         selectImage = binding.buttonAddPhoto;
         uploadImage = binding.buttonUpload;
+        refresh = binding.buttonRefresh;
+        uploadImage.setVisibility(View.INVISIBLE);
 
         // get the Firebase  storage reference
         storage = FirebaseStorage.getInstance();
-        storageReference = storage.getReference();
+        storageReference = storage.getReference("images");
+
+        db = FirebaseDatabase.getInstance();
+        databaseReference = db.getReference("images");
 
         super.onViewCreated(view, savedInstanceState);
         selectImage.setOnClickListener(new View.OnClickListener() {
@@ -123,6 +143,7 @@ public class ProfileFragment extends Fragment {
             public void onClick(View view) {
 
                 SelectImage();
+               // uploadImage.setVisibility(View.VISIBLE);
             }
         });
 
@@ -131,15 +152,19 @@ public class ProfileFragment extends Fragment {
             public void onClick(View view) {
 
                 UploadImage();
+                adapter.notifyDataSetChanged();
+                //mlistener.goToprofiel();
+
+            }
+        });
+        refresh.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
             }
         });
 
-        recyclerView = binding.recycViewx;
-        recyclerView.setHasFixedSize(true);
-        layoutManager = new LinearLayoutManager(getContext());
-        recyclerView.setLayoutManager(layoutManager);
-        adapter = new ProfileRecycAdapter(imagelist,this);
-       // recyclerView.setAdapter(adapter);
+
 
         StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images");
         listRef.listAll().addOnSuccessListener(new OnSuccessListener<ListResult>() {
@@ -162,6 +187,19 @@ public class ProfileFragment extends Fragment {
                 }
             }
         });
+    }
+
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if(context instanceof ProfileIlistener){
+            mlistener = (ProfileIlistener) context;
+        }
+    }
+
+    ProfileIlistener mlistener;
+    interface ProfileIlistener{
+        void goToprofiel();
     }
     // Select Image method
     private void SelectImage()
@@ -213,15 +251,20 @@ public class ProfileFragment extends Fragment {
                 e.printStackTrace();
             }
             imageView.setImageBitmap(bitmap);
+            uploadImage.setVisibility(View.VISIBLE);
+
+
+
 
 
 
         }
     }
 
+
     // UploadImage method
-    private void UploadImage()
-    {
+    private void UploadImage() {
+
         if (filePath != null) {
 
             // Code for showing progressDialog while uploading
@@ -245,8 +288,7 @@ public class ProfileFragment extends Fragment {
 
                                 @Override
                                 public void onSuccess(
-                                        UploadTask.TaskSnapshot taskSnapshot)
-                                {
+                                        UploadTask.TaskSnapshot taskSnapshot) {
 
                                     // Image uploaded successfully
                                     // Dismiss dialog
@@ -256,13 +298,22 @@ public class ProfileFragment extends Fragment {
                                                     "Image Uploaded!!",
                                                     Toast.LENGTH_SHORT)
                                             .show();
+
+                                    ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
+                                        @Override
+                                        public void onSuccess(Uri uri) {
+                                            Log.d("demo", "onSuccess: The added photos uri is "+ uri.toString());
+                                            setData(mAuth.getUid(), FirebaseAuth.getInstance().getCurrentUser().getDisplayName(),uri.toString());
+                                        }
+                                    });
+
+
                                 }
                             })
 
                     .addOnFailureListener(new OnFailureListener() {
                         @Override
-                        public void onFailure(@NonNull Exception e)
-                        {
+                        public void onFailure(@NonNull Exception e) {
 
                             // Error, Image not uploaded
                             progressDialog.dismiss();
@@ -280,19 +331,52 @@ public class ProfileFragment extends Fragment {
                                 // percentage on the dialog box
                                 @Override
                                 public void onProgress(
-                                        UploadTask.TaskSnapshot taskSnapshot)
-                                {
+                                        UploadTask.TaskSnapshot taskSnapshot) {
                                     double progress
                                             = (100.0
                                             * taskSnapshot.getBytesTransferred()
                                             / taskSnapshot.getTotalByteCount());
                                     progressDialog.setMessage(
                                             "Uploaded "
-                                                    + (int)progress + "%");
+                                                    + (int) progress + "%");
+                                    uploadImage.setVisibility(View.INVISIBLE);
                                 }
                             });
         }
+
     }
+    private void setData(String uId, String photoOwner, String uri){
+
+        mAuth = FirebaseAuth.getInstance();
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+
+        Date c = Calendar.getInstance().getTime();
+        Log.d("demo", "setData: creator is  "+ mAuth.getCurrentUser());
+
+        HashMap<String, Object> photo = new HashMap<>();
+
+        Log.d("demo", "setData: title is "+ uId);
+        Log.d("demo", "setData: desc is "+ photoOwner);
+        Log.d("demo", "setData: current user "+uri);
+        photo.put("uid", uId);
+        photo.put("photoOwner", photoOwner);
+        photo.put("uri", uri);
+
+        db.collection("images").document().set(photo)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.d("demo", "onSuccess: Forum Successfuly posted ");
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("demo", "onFailure: Fail"+ e.toString());
+                    }
+                });
+    }
+
 }
 
 

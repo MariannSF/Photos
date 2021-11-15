@@ -19,7 +19,7 @@ import android.util.Log;
 
 import com.google.firebase.auth.FirebaseAuth;
 
-public class MainActivity extends AppCompatActivity implements LoginFragment.LoginListener, RegisterFragment.RegisterIlistener {
+public class MainActivity extends AppCompatActivity implements LoginFragment.LoginListener, RegisterFragment.RegisterIlistener, ProfileFragment.ProfileIlistener {
 
     FirebaseAuth mAuth;
     @Override
@@ -79,7 +79,10 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
     }
 
 
-
-
-
+    @Override
+    public void goToprofiel() {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.containerView, new ProfileFragment())
+                .commit();
+    }
 }
