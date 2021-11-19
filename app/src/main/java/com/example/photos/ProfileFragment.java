@@ -32,7 +32,10 @@ import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.firestore.FieldValue;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.QueryDocumentSnapshot;
+import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
@@ -45,15 +48,18 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
+//I am getting the image in and storing data in db, now create a getData to get the data from the database and send it to the adapter.
+// reminder you are only gettind the image and separately adding it to db  then you need to follow the eralier assingment which is stored in downlaods under Goup7_Homework05\HW05Mariann
 
-public class ProfileFragment extends Fragment {
+public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.onDeleteClick{
 
     ArrayList<String> imagelist= new ArrayList<>();
+    ArrayList<Photo> photos = new ArrayList<>();
     RecyclerView recyclerView;
-    /*StorageReference root;
-    ProgressBar progressBar;*/
+
     ProfileRecycAdapter adapter;
     LinearLayoutManager layoutManager;
     FirebaseAuth mAuth;
@@ -62,6 +68,7 @@ public class ProfileFragment extends Fragment {
     Button refresh;
     ImageView imageView;
     private Uri filePath;
+    String docId;
     // request code
     private final int PICK_IMAGE_REQUEST = 22;
 
@@ -70,6 +77,7 @@ public class ProfileFragment extends Fragment {
     StorageReference storageReference;
     FirebaseDatabase db;
     DatabaseReference databaseReference;
+    FirebaseFirestore dbi = FirebaseFirestore.getInstance();
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
@@ -121,10 +129,12 @@ public class ProfileFragment extends Fragment {
         layoutManager = new LinearLayoutManager(getContext());
         recyclerView.setLayoutManager(layoutManager);
         updateList();
-        adapter = new ProfileRecycAdapter(imagelist,this);
-
+        getData();
         mAuth = FirebaseAuth.getInstance();
         String uid = mAuth.getCurrentUser().getUid();
+        adapter = new ProfileRecycAdapter(photos,mAuth.getUid(),this, this);
+
+
         imageView = binding.imageView1;
         selectImage = binding.buttonAddPhoto;
         uploadImage = binding.buttonUpload;
@@ -136,7 +146,9 @@ public class ProfileFragment extends Fragment {
         storageReference = storage.getReference("images");
 
         db = FirebaseDatabase.getInstance();
-        databaseReference = db.getReference("images");
+        //databaseReference = db.getReference("images");
+
+
 
         super.onViewCreated(view, savedInstanceState);
 
@@ -159,14 +171,6 @@ public class ProfileFragment extends Fragment {
 
             }
         });
-       /* refresh.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-
-            }
-        });*/
-
-
 
 
     }
@@ -179,7 +183,7 @@ public class ProfileFragment extends Fragment {
                     file.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                         @Override
                         public void onSuccess(Uri uri) {
-                          //  imagelist.add(uri.toString());
+                            imagelist.add(uri.toString());
                             Log.d("demo", "onSuccess: itemvalue "+ uri.toString());
                             adapter.notifyDataSetChanged();
                         }
@@ -204,6 +208,12 @@ public class ProfileFragment extends Fragment {
     }
 
     ProfileIlistener mlistener;
+
+    @Override
+    public void onDeleteClick(int position) {
+        deletePhoto(position);
+    }
+
     interface ProfileIlistener{
         void goToprofiel();
     }
@@ -270,6 +280,7 @@ public class ProfileFragment extends Fragment {
 
     // UploadImage method
     private void UploadImage() {
+        Photo photo = new Photo();
 
         if (filePath != null) {
 
@@ -303,11 +314,35 @@ public class ProfileFragment extends Fragment {
                                     imagelist.add(filePath.toString());
 
 
+
                                     ref.getDownloadUrl().addOnSuccessListener(new OnSuccessListener<Uri>() {
                                         @Override
                                         public void onSuccess(Uri uri) {
-                                            Log.d("demo", "onSuccess: The added photos uri is "+ uri.toString());
-                                            setData(mAuth.getUid(), FirebaseAuth.getInstance().getCurrentUser().getDisplayName(),uri.toString());
+
+                                            //hash map to sore data in db
+                                            HashMap<String, Object> kep = new HashMap<>();
+                                            kep.put("photoOwner",mAuth.getCurrentUser().getDisplayName());
+                                            kep.put("uid",mAuth.getUid());
+                                            kep.put("uri", uri.toString());
+
+                                            Log.d("demo", "onSuccess: "+ kep);
+
+
+                                            dbi.collection("images").document().set(kep).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                                @Override
+                                                public void onSuccess(Void unused) {
+                                                    Log.d("demo", "onSuccess: Forum Successfully posted ");
+                                                    getData();
+                                                }
+                                            })
+                                                    .addOnFailureListener(new OnFailureListener() {
+                                                        @Override
+                                                        public void onFailure(@NonNull Exception e) {
+                                                            Log.d("demo", "onFailure: Fail"+ e.toString());
+                                                        }
+                                                    });
+                                           /*
+                                            setData(photo.getDocId(),mAuth.getUid(), FirebaseAuth.getInstance().getCurrentUser().getDisplayName(),uri.toString());*/
                                             adapter.notifyDataSetChanged();
                                         }
                                     });
@@ -350,7 +385,68 @@ public class ProfileFragment extends Fragment {
         }
 
     }
-    private void setData(String uId, String photoOwner, String uri){
+    void getData(){
+        dbi.collection("images").get()
+                .addOnSuccessListener(new OnSuccessListener<QuerySnapshot>() {
+                    @Override
+                    public void onSuccess(QuerySnapshot queryDocumentSnapshots) {
+                        photos.clear();
+                        for(QueryDocumentSnapshot document : queryDocumentSnapshots){
+                            docId = document.getId();
+                            Log.d("demo", "onSuccess: doc id is "+ docId);
+                            // public Photo(String docId,String photoOwner, String uri, String getPhotoOwnerId) {
+                            photos.add(new Photo(docId, document.getString("photoOwner"), document.getString("uri"), document.getString("uid")));
+                        }
+                        for (Photo forum : photos) {
+                            Log.d("demo", "onEvent: forum info " + forum);
+                        }
+                        adapter.notifyDataSetChanged();
+                    }
+                }).addOnFailureListener(new OnFailureListener() {
+            @Override
+            public void onFailure(@NonNull Exception e) {
+                Log.d("demo", "onFailure: "+e);
+            }
+        });
+
+    }
+    void deletePhoto(int p){
+
+        String photoID = photos.get(p).getDocId();
+        Log.d("demo", "deletePhoto: the doc id in delete is"+ photoID);
+
+        Map<String, Object> photoN = new HashMap<>();
+        photoN.put("uid", FieldValue.delete());
+        photoN.put("photoOwner", FieldValue.delete());
+        photoN.put("uri", FieldValue.delete());
+        dbi.collection("images").document(photoID).update(photoN).addOnSuccessListener(new OnSuccessListener<Void>() {
+            @Override
+            public void onSuccess(Void unused) {
+                Log.d("demo", "onSuccess: Success in deleting fields");
+
+            }
+        });
+        dbi.collection("images").document(photoID)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void unused) {
+                        Log.d("demo", "onSuccess: Deleted successfully");
+                        Log.d("demo", "onSuccess: ");
+                        getData();
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(@NonNull Exception e) {
+                        Log.d("demo", "onFailure: Error Deleting Document "+e);
+
+                    }
+                });
+        adapter.notifyDataSetChanged();
+    }
+
+    private void setData(String images, String uId, String photoOwner, String uri){
 
         mAuth = FirebaseAuth.getInstance();
         FirebaseFirestore db = FirebaseFirestore.getInstance();
@@ -388,11 +484,15 @@ public class ProfileFragment extends Fragment {
 
 class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.ProfileViewHolder>{
 
-    private ArrayList<String> imageList;
+    private ArrayList<Photo> photos;
+    private onDeleteClick monDeleteListener;
+    String currentUserId;
 
-    public ProfileRecycAdapter(ArrayList<String> imagelist, ProfileFragment profileFragment) {
+    public ProfileRecycAdapter(ArrayList<Photo> photos, String currentUserId,ProfileFragment deleteListener, onDeleteClick onDeleteListener) {
 
-        this.imageList = imagelist;
+        this.photos = photos;
+        this.currentUserId = currentUserId;
+        this.monDeleteListener = onDeleteListener;
 
     }
 
@@ -402,27 +502,73 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
     @Override
     public ProfileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.listing_item, parent,false);
-        ProfileViewHolder profileViewHolder = new ProfileViewHolder(view);
+        ProfileViewHolder profileViewHolder = new ProfileViewHolder(view, monDeleteListener);
         return profileViewHolder;
     }
 
     @Override
     public void onBindViewHolder(@NonNull ProfileRecycAdapter.ProfileViewHolder holder, int position) {
 
-        Glide.with(holder.imageView.getContext()).load(imageList.get(position)).into(holder.imageView);
+        Photo photo = photos.get(position);
+
+        //Glide.with(holder.imageView.getContext()).load(photos.get(position)).into(holder.imageView);
+
+        Glide.with(holder.imageViewIm.getContext()).load(Uri.parse(photos.get(position).getUri())).into(holder.imageViewIm);
+        holder.photo = photo;
+        if(holder!=null) {
+            if (photo.getUid().equals(currentUserId)) {
+                holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
+                holder.imageViewTrash.setVisibility(View.VISIBLE);
+            } else {
+                holder.imageViewTrash.setVisibility(View.INVISIBLE);
+            }
+        }
+
+      //  holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
+
     }
 
     @Override
     public int getItemCount() {
-        return imageList.size();
+        return photos.size();
     }
 
-    public class ProfileViewHolder extends RecyclerView.ViewHolder {
+    public class ProfileViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-        ImageView imageView;
-        public ProfileViewHolder(@NonNull View itemView) {
+
+        ImageView imageViewTrash;
+        ImageView imageViewLike;
+        Button buttonComment;
+        ImageView imageViewIm;
+        onDeleteClick onDeleteListener;
+        Photo photo;
+
+        public ProfileViewHolder(@NonNull View itemView, onDeleteClick onDeleteListener) {
             super(itemView);
-            imageView = itemView.findViewById(R.id.imageViewImage);
+            imageViewIm = itemView.findViewById(R.id.imageViewImage);
+            itemView.setOnClickListener(this);
+            this.onDeleteListener = onDeleteListener;
+
+            imageViewTrash =itemView.findViewById(R.id.imageViewTR);
+            itemView.setOnClickListener(this);
+            if(imageViewTrash!= null){
+                imageViewTrash.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+
+                        Log.d("demo", "onClick: you clicked on delete");
+                        onDeleteListener.onDeleteClick(getAdapterPosition());
+                    }
+                });
+            }
         }
+
+        @Override
+        public void onClick(View view) {
+
+        }
+    }
+    interface onDeleteClick{
+        void onDeleteClick(int position);
     }
 }

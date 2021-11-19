@@ -3,6 +3,7 @@ package com.example.photos;
 import com.google.firebase.auth.FirebaseUser;
 
 public class Photo {
+    private String docId;
     private String photoOwner;
     private String uri;
     private String uid;
@@ -10,10 +11,27 @@ public class Photo {
     public Photo() {
     }
 
-    public Photo(String photoOwner, String uri, String getPhotoOwnerId) {
+    public Photo(String docId,String photoOwner, String uri, String getPhotoOwnerId) {
+        this.docId = docId;
         this.photoOwner = photoOwner;
         this.uri = uri;
         this.uid = getPhotoOwnerId;
+    }
+
+    public String getUid() {
+        return uid;
+    }
+
+    public void setUid(String uid) {
+        this.uid = uid;
+    }
+
+    public String getDocId() {
+        return docId;
+    }
+
+    public void setDocId(String docId) {
+        this.docId = docId;
     }
 
     public String getPhotoOwner() {
