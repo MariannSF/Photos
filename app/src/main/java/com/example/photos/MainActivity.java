@@ -24,7 +24,7 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
     FirebaseAuth mAuth;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        contextOfApplication = getContextOfApplication();
+       // contextOfApplication = getContextOfApplication();
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -37,16 +37,16 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
                     .commit();
         }else {
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.containerView, new ProfileFragment(),"listing")
+                    .replace(R.id.containerView, new ListingFragment(),"listing")
                     .commit();
         }
     }
 
-    public static Context contextOfApplication;
+    /*public static Context contextOfApplication;
     public static Context getContextOfApplication()
     {
         return contextOfApplication;
-    }
+    }*/
     @Override
     public void goToCreateAccount() {
         getSupportFragmentManager().beginTransaction()
