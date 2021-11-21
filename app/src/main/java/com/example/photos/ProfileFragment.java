@@ -16,6 +16,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -65,6 +66,8 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
     FirebaseAuth mAuth;
     Button selectImage;
     Button uploadImage;
+    TextView name;
+    TextView email;
     Button refresh;
     ImageView imageView;
     private Uri filePath;
@@ -124,6 +127,7 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        getActivity().setTitle("Profile");
         recyclerView = binding.recycViewx;
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());
@@ -135,6 +139,10 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
         adapter = new ProfileRecycAdapter(photos,mAuth.getUid(),this, this);
 
 
+        name = binding.textViewName;
+        email = binding.textViewEmail;
+        name.setText(FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
+        email.setText(FirebaseAuth.getInstance().getCurrentUser().getEmail());
         imageView = binding.imageView1;
         selectImage = binding.buttonAddPhoto;
         uploadImage = binding.buttonUpload;
@@ -215,7 +223,7 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
     }
 
     interface ProfileIlistener{
-        void goToprofiel();
+        void goToProfile();
     }
     // Select Image method
     private void SelectImage()
@@ -395,7 +403,9 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
                             docId = document.getId();
                             Log.d("demo", "onSuccess: doc id is "+ docId);
                             // public Photo(String docId,String photoOwner, String uri, String getPhotoOwnerId) {
-                            photos.add(new Photo(docId, document.getString("photoOwner"), document.getString("uri"), document.getString("uid")));
+                            if(FirebaseAuth.getInstance().getCurrentUser().getUid().equals(document.getString("uid"))) {
+                                photos.add(new Photo(docId, document.getString("photoOwner"), document.getString("uri"), document.getString("uid")));
+                            }
                         }
                         for (Photo forum : photos) {
                             Log.d("demo", "onEvent: forum info " + forum);
@@ -512,6 +522,7 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
         Photo photo = photos.get(position);
 
         //Glide.with(holder.imageView.getContext()).load(photos.get(position)).into(holder.imageView);
+
 
         Glide.with(holder.imageViewIm.getContext()).load(Uri.parse(photos.get(position).getUri())).into(holder.imageViewIm);
         holder.photo = photo;

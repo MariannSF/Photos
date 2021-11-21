@@ -108,12 +108,14 @@ public class LoginFragment extends Fragment {
                                     if(task.isSuccessful()){
                                         Log.d("TAG", "onComplete: Logged in Success ");
                                         Log.d(TAG, "onComplete: user"+ mAuth.getCurrentUser().getUid());
+                                        Log.d(TAG, "onComplete: The name form Login "+ mAuth.getCurrentUser().getDisplayName());
                                         //this is how i can get the current user if the user is logged in
                                         //otherwise it is null = not logged in.
                                         mAuth.getCurrentUser();
-                                       // mListener.goToListing();
 
-                                        mListener.goToProfile();
+                                        mListener.goToListing();
+
+                                        //mListener.goToProfile();
                                     }else {
 
                                         Log.d(TAG, "onComplete: "+ task.getException().getMessage());

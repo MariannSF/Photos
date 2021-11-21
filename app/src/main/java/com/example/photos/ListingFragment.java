@@ -30,6 +30,7 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.firestore.FieldValue;
@@ -51,8 +52,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-//I am getting the image in and storing data in db, now create a getData to get the data from the database and send it to the adapter.
-// reminder you are only gettind the image and separately adding it to db  then you need to follow the eralier assingment which is stored in downlaods under Goup7_Homework05\HW05Mariann
+//the logout button does not call something check
 
 public class ListingFragment extends Fragment  implements ListingRecycAdapter.onDeleteClick{
 
@@ -63,12 +63,14 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
     ListingRecycAdapter adapter;
     LinearLayoutManager layoutManager;
     FirebaseAuth mAuth;
-    Button selectImage;
     Button uploadImage;
-    Button refresh;
+    Button logout;
+    Button profile;
     ImageView imageView;
     private Uri filePath;
     String docId;
+    String uId;
+    FirebaseUser currentUser;
     // request code
     private final int PICK_IMAGE_REQUEST = 22;
 
@@ -124,6 +126,13 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        getActivity().setTitle("Listing");
+        currentUser = FirebaseAuth.getInstance().getCurrentUser();
+        Log.d("demo", "create onViewCreated: NaMe "+ FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
+
+
         recyclerView = binding.recyclerView;
         recyclerView.setHasFixedSize(true);
         layoutManager = new LinearLayoutManager(getContext());
@@ -144,15 +153,36 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
         db = FirebaseDatabase.getInstance();
         //databaseReference = db.getReference("images");
 
+        profile = binding.buttonMyProfile;
+        profile.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mListener.goToProfile();
+            }
+        });
+        logout = binding.buttonLogOut;
+        logout.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                FirebaseAuth.getInstance().signOut();
+                mListener.goToLogin();
+            }
+        });
 
+    }
+    @Override
+    public void onAttach(@NonNull Context context) {
+        super.onAttach(context);
+        if(context instanceof ListingIlistener){
+            mListener = (ListingIlistener) context;
+        }
+    }
 
-        super.onViewCreated(view, savedInstanceState);
+    ListingIlistener mListener;
 
-
-
-
-
-
+    interface ListingIlistener{
+        void goToProfile();
+        void goToLogin();
     }
     void updateList(){
         StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images/images");
@@ -179,24 +209,14 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
         });
     }
 
-    @Override
-    public void onAttach(@NonNull Context context) {
-        super.onAttach(context);
-        if(context instanceof ListingIlistener){
-            mlistener = (ListingIlistener) context;
-        }
-    }
 
-    ListingIlistener mlistener;
 
     @Override
     public void onDeleteClick(int position) {
         deletePhoto(position);
     }
 
-    interface ListingIlistener{
-        void goToprofiel();
-    }
+
     // Select Image method
     private void SelectImage()
     {
@@ -495,14 +515,14 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
 
         Glide.with(holder.imageViewIm.getContext()).load(Uri.parse(photos.get(position).getUri())).into(holder.imageViewIm);
         holder.photo = photo;
-        if(holder!=null) {
+        /*if(holder!=null) {
             if (photo.getUid().equals(currentUserId)) {
                 holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
                 holder.imageViewTrash.setVisibility(View.VISIBLE);
             } else {
                 holder.imageViewTrash.setVisibility(View.INVISIBLE);
             }
-        }
+        }*/
 
         //  holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
 
@@ -529,7 +549,7 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
             itemView.setOnClickListener(this);
             this.onDeleteListener = onDeleteListener;
 
-            imageViewTrash =itemView.findViewById(R.id.imageViewTR);
+            /*imageViewTrash =itemView.findViewById(R.id.imageViewTR);
             itemView.setOnClickListener(this);
             if(imageViewTrash!= null){
                 imageViewTrash.setOnClickListener(new View.OnClickListener() {
@@ -540,7 +560,7 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
                         onDeleteListener.onDeleteClick(getAdapterPosition());
                     }
                 });
-            }
+            }*/
         }
 
         @Override

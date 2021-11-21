@@ -28,6 +28,7 @@ import android.widget.EditText;
 
 import com.example.photos.databinding.FragmentRegisterBinding;
 import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.AuthResult;
 import com.google.firebase.auth.FirebaseAuth;
@@ -105,6 +106,7 @@ public class RegisterFragment extends Fragment {
 
                                     if(task.isSuccessful()){
                                         Log.d("TAG", "onComplete: Registration  is Successful ");
+                                        Log.d(TAG, "onComplete: the name of USER IS "+name);
                                         Log.d(TAG, "onComplete: user"+ mAuth.getCurrentUser().getUid());
                                         //this is how i can get the current user if the user is logged in
                                         //otherwise it is null = not logged in.
@@ -116,7 +118,15 @@ public class RegisterFragment extends Fragment {
                                         UserProfileChangeRequest profileUpdates = new UserProfileChangeRequest.Builder()
                                                 .setDisplayName(name).build();
 
-                                        user.updateProfile(profileUpdates);
+                                        user.updateProfile(profileUpdates).addOnSuccessListener(new OnSuccessListener<Void>() {
+                                            @Override
+                                            public void onSuccess(Void unused) {
+                                                Log.d(TAG, "onSuccess: User updated ");
+                                            }
+                                        });
+
+                                        Log.d(TAG, "onComplete: the name of USER IS "+FirebaseAuth.getInstance().getCurrentUser().getDisplayName());
+
 
                                     }else {
                                         Log.d(TAG, "onComplete: Error !!");

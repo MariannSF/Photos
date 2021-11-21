@@ -4,6 +4,8 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/activity_main.xml" value="0.353125" />
+        <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/comments_items.xml" value="0.31354166666666666" />
+        <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/fragment_comment.xml" value="0.4466666666666667" />
         <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/fragment_listing.xml" value="0.3671875" />
         <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/fragment_login.xml" value="0.3671875" />
         <entry key="..\:/Users/maria/AndroidStudioProjects/Photos/app/src/main/res/layout/fragment_profile.xml" value="0.3671875" />
