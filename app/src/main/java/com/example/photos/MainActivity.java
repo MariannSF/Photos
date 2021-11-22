@@ -71,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
                 .commit();
     }
 
+
+
     @Override
     public void goToLogin() {
         getSupportFragmentManager().beginTransaction()

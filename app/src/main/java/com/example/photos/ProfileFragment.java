@@ -3,7 +3,6 @@ package com.example.photos;
 import static android.app.Activity.RESULT_OK;
 
 import android.app.ProgressDialog;
-import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -21,6 +20,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -29,7 +29,6 @@ import com.bumptech.glide.Glide;
 import com.example.photos.databinding.FragmentProfileBinding;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -40,7 +39,6 @@ import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
 import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.OnProgressListener;
-import com.google.firebase.storage.StorageMetadata;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
@@ -55,7 +53,7 @@ import java.util.UUID;
 //I am getting the image in and storing data in db, now create a getData to get the data from the database and send it to the adapter.
 // reminder you are only gettind the image and separately adding it to db  then you need to follow the eralier assingment which is stored in downlaods under Goup7_Homework05\HW05Mariann
 
-public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.onDeleteClick{
+public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.onDeleteClick, ProfileRecycAdapter.onCommentClick{
 
     ArrayList<String> imagelist= new ArrayList<>();
     ArrayList<Photo> photos = new ArrayList<>();
@@ -136,7 +134,7 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
         getData();
         mAuth = FirebaseAuth.getInstance();
         String uid = mAuth.getCurrentUser().getUid();
-        adapter = new ProfileRecycAdapter(photos,mAuth.getUid(),this, this);
+        adapter = new ProfileRecycAdapter(photos,mAuth.getUid(),this, this, this, (ProfileRecycAdapter.onCommentClick) this);
 
 
         name = binding.textViewName;
@@ -222,8 +220,16 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
         deletePhoto(position);
     }
 
+    @Override
+    public void onCommentClick(int position, String docId, String currentUserId) {
+        commentPhoto(position,docId,currentUserId);
+
+    }
+
+
     interface ProfileIlistener{
         void goToProfile();
+
     }
     // Select Image method
     private void SelectImage()
@@ -420,6 +426,9 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
         });
 
     }
+    void commentPhoto(int p, String docId, String uid){
+      //  mlistener.goToComment(docId, uid);
+    }
     void deletePhoto(int p){
 
         String photoID = photos.get(p).getDocId();
@@ -496,13 +505,15 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
 
     private ArrayList<Photo> photos;
     private onDeleteClick monDeleteListener;
+    private onCommentClick monCommentListener;
     String currentUserId;
 
-    public ProfileRecycAdapter(ArrayList<Photo> photos, String currentUserId,ProfileFragment deleteListener, onDeleteClick onDeleteListener) {
+    public ProfileRecycAdapter(ArrayList<Photo> photos, String currentUserId,ProfileFragment deleteListener, onDeleteClick onDeleteListener, ProfileFragment commentListener, onCommentClick monCommentListener) {
 
         this.photos = photos;
         this.currentUserId = currentUserId;
         this.monDeleteListener = onDeleteListener;
+        this.monCommentListener = monCommentListener;
 
     }
 
@@ -512,7 +523,7 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
     @Override
     public ProfileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.listing_item, parent,false);
-        ProfileViewHolder profileViewHolder = new ProfileViewHolder(view, monDeleteListener);
+        ProfileViewHolder profileViewHolder = new ProfileViewHolder(view, monDeleteListener, monCommentListener);
         return profileViewHolder;
     }
 
@@ -523,9 +534,23 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
 
         //Glide.with(holder.imageView.getContext()).load(photos.get(position)).into(holder.imageView);
 
+        holder.imageViewIm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("demo", "onClick: getDoc id "+ photo.getDocId());
+                AppCompatActivity activity = (AppCompatActivity) view.getContext();
+                ProfileFragment profileFragment = new ProfileFragment();
+                activity.getSupportFragmentManager().beginTransaction().replace(R.id.containerView,  CommentFragment.newInstance(photo.getDocId(), currentUserId, photo.getUri()))
+                        .addToBackStack(null)
+                        .commit();
+
+            }
+        });
 
         Glide.with(holder.imageViewIm.getContext()).load(Uri.parse(photos.get(position).getUri())).into(holder.imageViewIm);
+
         holder.photo = photo;
+
         if(holder!=null) {
             if (photo.getUid().equals(currentUserId)) {
                 holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
@@ -552,13 +577,23 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
         Button buttonComment;
         ImageView imageViewIm;
         onDeleteClick onDeleteListener;
+        onCommentClick onCommentListener;
         Photo photo;
 
-        public ProfileViewHolder(@NonNull View itemView, onDeleteClick onDeleteListener) {
+        public ProfileViewHolder(@NonNull View itemView, onDeleteClick onDeleteListener, onCommentClick onCommentListener) {
             super(itemView);
             imageViewIm = itemView.findViewById(R.id.imageViewImage);
             itemView.setOnClickListener(this);
             this.onDeleteListener = onDeleteListener;
+            this.onCommentListener = onCommentListener;
+            buttonComment = itemView.findViewById(R.id.buttonComment);
+            buttonComment.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Log.d("demo", "onClick: you clicked on comment for "+ getAdapterPosition());
+                    onCommentListener.onCommentClick(getAdapterPosition(), photo.getDocId(), currentUserId);
+                }
+            });
 
             imageViewTrash =itemView.findViewById(R.id.imageViewTR);
             itemView.setOnClickListener(this);
@@ -581,5 +616,8 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
     }
     interface onDeleteClick{
         void onDeleteClick(int position);
+    }
+    interface onCommentClick{
+        void onCommentClick(int position, String docId, String currentUserId);
     }
 }
