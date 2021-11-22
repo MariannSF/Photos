@@ -66,8 +66,22 @@ public class MainActivity extends AppCompatActivity implements LoginFragment.Log
 
     @Override
     public void goToProfile() {
+
+    }
+
+    @Override
+    public void goToComment(String docId, String currentUid, String uri) {
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.containerView, new ProfileFragment())
+                .replace(R.id.containerView, new CommentFragment(docId, currentUid, uri))
+                .addToBackStack(null)
+                .commit();
+    }
+
+    @Override
+    public void goToProfile(String uId) {
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.containerView, new ProfileFragment(uId))
+                .addToBackStack(null)
                 .commit();
     }
 

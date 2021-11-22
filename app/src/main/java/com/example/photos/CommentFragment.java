@@ -68,6 +68,12 @@ public class CommentFragment extends Fragment implements CommentsRecyclerAdapter
         // Required empty public constructor
     }
 
+    public CommentFragment(String docId, String currentUid, String uri) {
+        docID = docId;
+        userID = currentUid;
+        this.uri = uri;
+    }
+
 
     // TODO: Rename and change types and number of parameters
     public static CommentFragment newInstance(String docID, String userID, String uri) {
@@ -234,6 +240,8 @@ public class CommentFragment extends Fragment implements CommentsRecyclerAdapter
         commentN.put("photoID", FieldValue.delete());
         commentN.put("userID", FieldValue.delete());
 
+
+
         db.collection("images").document(docID).collection("comment").document(commentID).update(commentN).addOnSuccessListener(new OnSuccessListener<Void>() {
             @Override
             public void onSuccess(Void unused) {
@@ -243,7 +251,7 @@ public class CommentFragment extends Fragment implements CommentsRecyclerAdapter
         });
 
         //db.collection("forums").document(docID).collection("comment")
-        db.collection("forums").document(docID).collection("comment").document(commentID)
+        db.collection("images").document(docID).collection("comment").document(commentID)
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
@@ -291,7 +299,7 @@ class CommentsRecyclerAdapter extends RecyclerView.Adapter<CommentsRecyclerAdapt
     @Override
     public void onBindViewHolder(@NonNull CommentsRecyclerAdapter.CommentViewHolder holder, int position) {
         Comment comment = comments.get(position);
-        holder.textViewCommentCreator.setText(comment.commentCreator);
+        holder.textViewCommentCreator.setText("Comment by: "+comment.commentCreator);
         holder.textViewComment.setText(comment.comment);
         if(userID.equals(comment.userID)){
             holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);

@@ -16,10 +16,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -54,7 +56,7 @@ import java.util.UUID;
 
 //the logout button does not call something check
 
-public class ListingFragment extends Fragment  implements ListingRecycAdapter.onDeleteClick{
+public class ListingFragment extends Fragment  implements ListingRecycAdapter.onDeleteClick, ListingRecycAdapter.onCommentClick{
 
     ArrayList<String> imagelist= new ArrayList<>();
     ArrayList<Photo> photos = new ArrayList<>();
@@ -141,7 +143,7 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
         getData();
         mAuth = FirebaseAuth.getInstance();
         String uid = mAuth.getCurrentUser().getUid();
-        adapter = new ListingRecycAdapter(photos,mAuth.getUid(),this, this);
+        adapter = new ListingRecycAdapter(photos,mAuth.getUid(),this, this, this, (ListingRecycAdapter.onCommentClick) this);
 
 
 
@@ -157,7 +159,7 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
         profile.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mListener.goToProfile();
+                mListener.goToProfile(String.valueOf(mAuth.getCurrentUser().getUid()));
             }
         });
         logout = binding.buttonLogOut;
@@ -180,9 +182,18 @@ public class ListingFragment extends Fragment  implements ListingRecycAdapter.on
 
     ListingIlistener mListener;
 
+    @Override
+    public void onCommentClick(int position, String docId, String currentUserId, String uri) {
+        commentPhoto(position,docId,currentUserId, uri);
+    }
+    void commentPhoto(int p, String docId, String uid, String uri){
+        mListener.goToComment(docId, uid, uri);
+    }
+
     interface ListingIlistener{
-        void goToProfile();
+        void goToProfile(String s);
         void goToLogin();
+        void goToComment(String docId, String currentUid, String uri);
     }
     void updateList(){
         StorageReference listRef = FirebaseStorage.getInstance().getReference().child("images/images");
@@ -487,12 +498,14 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
     private ArrayList<Photo> photos;
     private onDeleteClick monDeleteListener;
     String currentUserId;
+    private  onCommentClick monCommentListener;
 
-    public ListingRecycAdapter(ArrayList<Photo> photos, String currentUserId,ListingFragment deleteListener, onDeleteClick onDeleteListener) {
+    public ListingRecycAdapter(ArrayList<Photo> photos, String currentUserId,ListingFragment deleteListener, onDeleteClick onDeleteListener,ListingFragment commentListener, onCommentClick monCommentListener) {
 
         this.photos = photos;
         this.currentUserId = currentUserId;
         this.monDeleteListener = onDeleteListener;
+        this.monCommentListener = monCommentListener;
 
     }
 
@@ -502,7 +515,7 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
     @Override
     public ListingViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.listing_item, parent,false);
-        ListingViewHolder listingViewHolder = new ListingViewHolder(view, monDeleteListener);
+        ListingViewHolder listingViewHolder = new ListingViewHolder(view, monDeleteListener, monCommentListener);
         return listingViewHolder;
     }
 
@@ -510,21 +523,25 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
     public void onBindViewHolder(@NonNull ListingRecycAdapter.ListingViewHolder holder, int position) {
 
         Photo photo = photos.get(position);
+        holder.name.setText(photo.getPhotoOwner());
 
         //Glide.with(holder.imageView.getContext()).load(photos.get(position)).into(holder.imageView);
 
+        holder.imageViewIm.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Log.d("demo", "onClick: you clicked on inmage "+ photo.getGetPhotoOwnerId());
+
+                AppCompatActivity activity = (AppCompatActivity) view.getContext();
+                ListingFragment listingFragment = new ListingFragment();
+                activity.getSupportFragmentManager().beginTransaction().replace(R.id.containerView,  ProfileFragment.newInstance(photo.getGetPhotoOwnerId()))
+                        .addToBackStack(null)
+                        .commit();
+            }
+        });
         Glide.with(holder.imageViewIm.getContext()).load(Uri.parse(photos.get(position).getUri())).into(holder.imageViewIm);
         holder.photo = photo;
-        /*if(holder!=null) {
-            if (photo.getUid().equals(currentUserId)) {
-                holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
-                holder.imageViewTrash.setVisibility(View.VISIBLE);
-            } else {
-                holder.imageViewTrash.setVisibility(View.INVISIBLE);
-            }
-        }*/
 
-        //  holder.imageViewTrash.setImageResource(R.drawable.rubbish_bin);
 
     }
 
@@ -536,31 +553,29 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
     public class ListingViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
 
-        ImageView imageViewTrash;
+
         ImageView imageViewLike;
         Button buttonComment;
         ImageView imageViewIm;
         onDeleteClick onDeleteListener;
+        TextView name;
         Photo photo;
+        onCommentClick onCommentListener;
 
-        public ListingViewHolder(@NonNull View itemView, onDeleteClick onDeleteListener) {
+        public ListingViewHolder(@NonNull View itemView, onDeleteClick onDeleteListener, onCommentClick onCommentListener) {
             super(itemView);
+            name = itemView.findViewById(R.id.textViewListerName);
             imageViewIm = itemView.findViewById(R.id.imageViewImage);
-            itemView.setOnClickListener(this);
-            this.onDeleteListener = onDeleteListener;
+            this.onCommentListener =  onCommentListener;
+            buttonComment = itemView.findViewById(R.id.buttonComment);
+            buttonComment.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Log.d("demo", "onClick: you clicked on comment for "+ getAdapterPosition());
+                    onCommentListener.onCommentClick(getAdapterPosition(), photo.getDocId(), currentUserId, photo.getUri());
+                }
+            });
 
-            /*imageViewTrash =itemView.findViewById(R.id.imageViewTR);
-            itemView.setOnClickListener(this);
-            if(imageViewTrash!= null){
-                imageViewTrash.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View view) {
-
-                        Log.d("demo", "onClick: you clicked on delete");
-                        onDeleteListener.onDeleteClick(getAdapterPosition());
-                    }
-                });
-            }*/
         }
 
         @Override
@@ -570,5 +585,8 @@ class ListingRecycAdapter extends RecyclerView.Adapter<ListingRecycAdapter.Listi
     }
     interface onDeleteClick{
         void onDeleteClick(int position);
+    }
+    interface onCommentClick{
+        void onCommentClick(int position, String docId, String currentUserId, String uri);
     }
 }

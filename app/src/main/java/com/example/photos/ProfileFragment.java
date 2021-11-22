@@ -82,24 +82,35 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
 
     // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
+    private static final String ARG_OID = "OID";
     private static final String ARG_PARAM2 = "param2";
 
     // TODO: Rename and change types of parameters
-    private String mParam1;
+    private String ownerID;
     private String mParam2;
 
     public ProfileFragment() {
         // Required empty public constructor
     }
 
+    public ProfileFragment(String uid){
+        ownerID = uid;
+    }
 
-    // TODO: Rename and change types and number of parameters
+/*    // TODO: Rename and change types and number of parameters
     public static ProfileFragment newInstance(String param1, String param2) {
         ProfileFragment fragment = new ProfileFragment();
         Bundle args = new Bundle();
         args.putString(ARG_PARAM1, param1);
         args.putString(ARG_PARAM2, param2);
+        fragment.setArguments(args);
+        return fragment;
+    }*/
+
+    public static Fragment newInstance(String ownerID) {
+        ProfileFragment fragment = new ProfileFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_OID, ownerID);
         fragment.setArguments(args);
         return fragment;
     }
@@ -108,8 +119,8 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
+            ownerID = getArguments().getString(ARG_OID);
+           // mParam2 = getArguments().getString(ARG_PARAM2);
         }
     }
 
@@ -221,14 +232,17 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
     }
 
     @Override
-    public void onCommentClick(int position, String docId, String currentUserId) {
-        commentPhoto(position,docId,currentUserId);
+    public void onCommentClick(int position, String docId, String currentUserId, String uri) {
+        commentPhoto(position,docId,currentUserId, uri);
 
     }
 
 
+
+
     interface ProfileIlistener{
         void goToProfile();
+        void goToComment(String docId, String currentUid, String uri);
 
     }
     // Select Image method
@@ -408,8 +422,10 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
                         for(QueryDocumentSnapshot document : queryDocumentSnapshots){
                             docId = document.getId();
                             Log.d("demo", "onSuccess: doc id is "+ docId);
+
                             // public Photo(String docId,String photoOwner, String uri, String getPhotoOwnerId) {
-                            if(FirebaseAuth.getInstance().getCurrentUser().getUid().equals(document.getString("uid"))) {
+                            if(ownerID.equals(document.getString("uid"))){
+                           // if(FirebaseAuth.getInstance().getCurrentUser().getUid().equals(document.getString("uid"))) {
                                 photos.add(new Photo(docId, document.getString("photoOwner"), document.getString("uri"), document.getString("uid")));
                             }
                         }
@@ -426,8 +442,8 @@ public class ProfileFragment extends Fragment  implements ProfileRecycAdapter.on
         });
 
     }
-    void commentPhoto(int p, String docId, String uid){
-      //  mlistener.goToComment(docId, uid);
+    void commentPhoto(int p, String docId, String uid, String uri){
+        mlistener.goToComment(docId, uid, uri);
     }
     void deletePhoto(int p){
 
@@ -522,7 +538,7 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
     @NonNull
     @Override
     public ProfileViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.listing_item, parent,false);
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.profile_item, parent,false);
         ProfileViewHolder profileViewHolder = new ProfileViewHolder(view, monDeleteListener, monCommentListener);
         return profileViewHolder;
     }
@@ -591,7 +607,7 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
                 @Override
                 public void onClick(View view) {
                     Log.d("demo", "onClick: you clicked on comment for "+ getAdapterPosition());
-                    onCommentListener.onCommentClick(getAdapterPosition(), photo.getDocId(), currentUserId);
+                    onCommentListener.onCommentClick(getAdapterPosition(), photo.getDocId(), currentUserId, photo.getUri());
                 }
             });
 
@@ -618,6 +634,6 @@ class ProfileRecycAdapter extends RecyclerView.Adapter<ProfileRecycAdapter.Profi
         void onDeleteClick(int position);
     }
     interface onCommentClick{
-        void onCommentClick(int position, String docId, String currentUserId);
+        void onCommentClick(int position, String docId, String currentUserId, String uri);
     }
 }
