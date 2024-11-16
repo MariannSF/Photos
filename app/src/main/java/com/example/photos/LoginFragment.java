@@ -4,8 +4,6 @@
     Mariann Szabo-Freund,
     
 
-    Group 07
-
  */
 
 package com.example.photos;
