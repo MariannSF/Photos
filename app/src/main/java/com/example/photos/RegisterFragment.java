@@ -1,10 +1,7 @@
 /*
     InClass08
     RegisterFragment.java
-    Mariann Szabo-Freund,
-    Bhaskararayuni Sai Datta
-
-    Group 07
+    Mariann Szabo-Freund
 
  */
 
